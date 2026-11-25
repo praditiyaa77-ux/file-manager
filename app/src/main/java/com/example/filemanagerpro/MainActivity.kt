@@ -3,6 +3,8 @@ package com.example.filemanagerpro
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -34,13 +36,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { FileManagerApp() }
-    }
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == SHIZUKU_REQUEST) {
-            Toast.makeText(this, if (Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED)
-                "Izin Shizuku diberikan" else "Izin Shizuku belum diberikan", Toast.LENGTH_SHORT).show()
-        }
     }
 }
 
@@ -97,6 +92,7 @@ fun FileManagerApp() {
     var dialog by remember { mutableStateOf("") }
     var nameInput by remember { mutableStateOf("") }
     var actionTarget by remember { mutableStateOf<ShellEntry?>(null) }
+    var renameTarget by remember { mutableStateOf<String?>(null) }
     var shizukuStatus by remember { mutableStateOf("Memeriksa Shizuku…") }
     var shellError by remember { mutableStateOf<String?>(null) }
 
@@ -131,18 +127,18 @@ fun FileManagerApp() {
         io.execute {
             try {
                 val list = ShizukuFiles.list(path)
-                android.os.Handler(mainLooper).post {
+                Handler(Looper.getMainLooper()).post {
                     protectedItems = list; protectedPath = path; shellRefresh++
                 }
             } catch (e: Exception) {
-                android.os.Handler(mainLooper).post { shellError = e.message ?: "Tidak dapat membaca folder"; protectedItems = emptyList() }
+                Handler(Looper.getMainLooper()).post { shellError = e.message ?: "Tidak dapat membaca folder"; protectedItems = emptyList() }
             }
         }
     }
     fun shellAction(block: () -> Unit) {
         io.execute {
             try { block(); loadShell(protectedPath) }
-            catch (e: Exception) { android.os.Handler(mainLooper).post { shellError = e.message ?: "Operasi gagal" } }
+            catch (e: Exception) { Handler(Looper.getMainLooper()).post { shellError = e.message ?: "Operasi gagal" } }
         }
     }
 
@@ -303,11 +299,11 @@ fun FileManagerApp() {
         onDismissRequest = { dialog = "" }, title = { Text("Ganti nama") },
         text = { OutlinedTextField(nameInput, { nameInput = it }, singleLine = true) },
         confirmButton = { TextButton(onClick = {
-            val old = actionTarget?.name
+            val old = renameTarget
             val n = nameInput.trim()
             if (old != null && n.isNotBlank() && !n.contains("/") && n != "." && n != "..")
                 shellAction { ShizukuFiles.rename(protectedPath, old, n) }
-            dialog = ""; actionTarget = null
+            dialog = ""; actionTarget = null; renameTarget = null
         }) { Text("Simpan") } },
         dismissButton = { TextButton(onClick = { dialog = ""; actionTarget = null; renameTarget = null }) { Text("Batal") } }
     )
