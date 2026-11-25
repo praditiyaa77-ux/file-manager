@@ -3,7 +3,7 @@
 Android native file manager foundation, configured with Android SDK 36 / Android 16 compile compatibility.
 
 ## What's new
-- Shizuku API 13.1.5 and provider integration.
+- Shizuku API 12.2.0 and provider integration.
 - Shizuku binder availability and permission checks.
 - Advanced browser for `/storage/emulated/0/Android/data` and `/storage/emulated/0/Android/obb`.
 - Shell-based directory listing, create folder, rename and delete.
